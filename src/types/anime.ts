@@ -21,11 +21,12 @@ export interface Studio {
 export interface Anime {
   id: number
   title: AnimeTitle
-  coverImage: { medium: string }
+  coverImage: { extraLarge: string | null; large: string }
   startDate: FuzzyDate
   nextAiringEpisode: AiringSchedule | null
   episodes: number | null
   averageScore: number | null
+  popularity: number
   genres: string[]
   studios: { edges: { node: Studio }[] }
   airingDayOfWeek?: number // 0=日 〜 6=土（nextAiringEpisode から計算）

@@ -14,11 +14,12 @@ const ANIME_SCHEDULE_QUERY = `
       ) {
         id
         title { romaji native }
-        coverImage { medium }
+        coverImage { extraLarge large }
         startDate { year month day }
         nextAiringEpisode { airingAt episode }
         episodes
         averageScore
+        popularity
         genres
         studios(isMain: true) {
           edges { node { name } }

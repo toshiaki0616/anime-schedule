@@ -17,11 +17,18 @@ function formatStartDate(year: number | null, month: number | null, day: number 
   return `${year}年${month}月${day}日`
 }
 
-interface Props {
-  anime: Anime
+function formatPopularity(n: number): string {
+  if (n >= 10000) return `${(n / 10000).toFixed(1)}万人`
+  return `${n.toLocaleString()}人`
 }
 
-export function AnimeCard({ anime }: Props) {
+interface Props {
+  anime: Anime
+  watching: boolean
+  onToggleWatch: () => void
+}
+
+export function AnimeCard({ anime, watching, onToggleWatch }: Props) {
   const studioName = anime.studios.edges[0]?.node.name ?? null
   const startDate = formatStartDate(
     anime.startDate.year,
@@ -33,14 +40,26 @@ export function AnimeCard({ anime }: Props) {
     : null
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="aspect-[2/3] bg-gray-100 overflow-hidden">
+    <div className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${watching ? 'border-indigo-400' : 'border-gray-100'}`}>
+      <div className="aspect-[2/3] bg-gray-100 overflow-hidden relative">
         <img
-          src={anime.coverImage.medium}
+          src={anime.coverImage.extraLarge ?? anime.coverImage.large}
           alt={anime.title.native ?? anime.title.romaji}
           className="w-full h-full object-cover"
           loading="lazy"
         />
+        {/* 視聴チェックボタン */}
+        <button
+          onClick={onToggleWatch}
+          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
+            watching
+              ? 'bg-indigo-600 text-white'
+              : 'bg-white/80 text-gray-400 hover:bg-white'
+          }`}
+          title={watching ? '視聴中' : '視聴リストに追加'}
+        >
+          {watching ? '✓' : '+'}
+        </button>
       </div>
       <div className="p-3">
         <h3 className="font-bold text-sm text-gray-900 line-clamp-2 mb-1">
@@ -76,6 +95,11 @@ export function AnimeCard({ anime }: Props) {
               <span>{anime.episodes}話</span>
             </div>
           )}
+
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400">視聴者</span>
+            <span>{formatPopularity(anime.popularity)}</span>
+          </div>
         </div>
 
         {anime.averageScore && (
