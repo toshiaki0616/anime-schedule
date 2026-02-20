@@ -1,41 +1,60 @@
 import { useState, useCallback } from 'react'
 
-const STORAGE_KEY = 'anime-watch-list'
+export const MEMBERS = ['としあき', 'たくろう', 'やすい', 'のうえー', 'はましん'] as const
+export type Member = (typeof MEMBERS)[number]
 
-function loadFromStorage(): Set<number> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return new Set()
-    return new Set(JSON.parse(raw) as number[])
-  } catch {
-    return new Set()
-  }
+export const MEMBER_COLORS: Record<Member, string> = {
+  としあき: 'bg-blue-500',
+  たくろう: 'bg-green-500',
+  やすい:   'bg-orange-500',
+  のうえー: 'bg-pink-500',
+  はましん: 'bg-purple-500',
 }
 
-function saveToStorage(ids: Set<number>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+const storageKey = (member: Member) => `anime-watch-list-${member}`
+
+function loadAll(): Record<Member, Set<number>> {
+  return Object.fromEntries(
+    MEMBERS.map((m) => {
+      try {
+        const raw = localStorage.getItem(storageKey(m))
+        return [m, new Set<number>(raw ? (JSON.parse(raw) as number[]) : [])]
+      } catch {
+        return [m, new Set<number>()]
+      }
+    })
+  ) as Record<Member, Set<number>>
+}
+
+function save(member: Member, ids: Set<number>) {
+  localStorage.setItem(storageKey(member), JSON.stringify([...ids]))
 }
 
 export function useWatchList() {
-  const [watchList, setWatchList] = useState<Set<number>>(loadFromStorage)
+  const [watchLists, setWatchLists] = useState<Record<Member, Set<number>>>(loadAll)
 
-  const toggle = useCallback((id: number) => {
-    setWatchList((prev) => {
-      const next = new Set(prev)
+  const toggle = useCallback((member: Member, id: number) => {
+    setWatchLists((prev) => {
+      const next = new Set(prev[member])
       if (next.has(id)) {
         next.delete(id)
       } else {
         next.add(id)
       }
-      saveToStorage(next)
-      return next
+      save(member, next)
+      return { ...prev, [member]: next }
     })
   }, [])
 
   const isWatching = useCallback(
-    (id: number) => watchList.has(id),
-    [watchList]
+    (member: Member, id: number) => watchLists[member].has(id),
+    [watchLists]
   )
 
-  return { watchList, toggle, isWatching }
+  const watchingMembers = useCallback(
+    (id: number): Member[] => MEMBERS.filter((m) => watchLists[m].has(id)),
+    [watchLists]
+  )
+
+  return { watchLists, toggle, isWatching, watchingMembers }
 }

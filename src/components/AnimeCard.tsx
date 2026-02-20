@@ -1,4 +1,5 @@
 import type { Anime } from '../types/anime'
+import { MEMBER_COLORS, type Member } from '../hooks/useWatchList'
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
 
@@ -24,11 +25,12 @@ function formatPopularity(n: number): string {
 
 interface Props {
   anime: Anime
-  watching: boolean
+  currentMemberWatching: boolean
+  watchingMembers: Member[]
   onToggleWatch: () => void
 }
 
-export function AnimeCard({ anime, watching, onToggleWatch }: Props) {
+export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch }: Props) {
   const studioName = anime.studios.edges[0]?.node.name ?? null
   const startDate = formatStartDate(
     anime.startDate.year,
@@ -40,7 +42,7 @@ export function AnimeCard({ anime, watching, onToggleWatch }: Props) {
     : null
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${watching ? 'border-indigo-400' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${currentMemberWatching ? 'border-indigo-400' : 'border-gray-100'}`}>
       <div className="aspect-[2/3] bg-gray-100 overflow-hidden relative">
         <img
           src={anime.coverImage.extraLarge ?? anime.coverImage.large}
@@ -52,14 +54,29 @@ export function AnimeCard({ anime, watching, onToggleWatch }: Props) {
         <button
           onClick={onToggleWatch}
           className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
-            watching
+            currentMemberWatching
               ? 'bg-indigo-600 text-white'
               : 'bg-white/80 text-gray-400 hover:bg-white'
           }`}
-          title={watching ? '視聴中' : '視聴リストに追加'}
+          title={currentMemberWatching ? '視聴中' : '視聴リストに追加'}
         >
-          {watching ? '✓' : '+'}
+          {currentMemberWatching ? '✓' : '+'}
         </button>
+
+        {/* 視聴中メンバーのドット */}
+        {watchingMembers.length > 0 && (
+          <div className="absolute bottom-2 left-2 flex gap-1">
+            {watchingMembers.map((m) => (
+              <span
+                key={m}
+                className={`w-4 h-4 rounded-full ${MEMBER_COLORS[m]} flex items-center justify-center text-white text-[8px] font-bold`}
+                title={m}
+              >
+                {m[0]}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="p-3">
         <h3 className="font-bold text-sm text-gray-900 line-clamp-2 mb-1">

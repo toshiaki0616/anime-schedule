@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useAnimeSchedule } from '../hooks/useAnimeSchedule'
-import { useWatchList } from '../hooks/useWatchList'
+import { useWatchList, MEMBERS, type Member } from '../hooks/useWatchList'
 import { AnimeCard } from '../components/AnimeCard'
 import { DayFilter } from '../components/DayFilter'
 import { LoadingSpinner } from '../components/LoadingSpinner'
+import { MemberSelector } from '../components/MemberSelector'
 import type { Anime } from '../types/anime'
 
 type SortKey = 'popularity' | 'score' | 'startDate'
@@ -31,16 +32,19 @@ function sortAnime(list: Anime[], key: SortKey): Anime[] {
 
 export function SchedulePage() {
   const { animeList, loading, error } = useAnimeSchedule('WINTER', 2026)
-  const { toggle, isWatching, watchList } = useWatchList()
+  const { watchLists, toggle, isWatching, watchingMembers } = useWatchList()
+  const [selectedMember, setSelectedMember] = useState<Member>(MEMBERS[0])
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('popularity')
   const [watchingOnly, setWatchingOnly] = useState(false)
+
+  const currentWatchCount = watchLists[selectedMember].size
 
   const filtered = useMemo(() => {
     let list = animeList
 
     if (watchingOnly) {
-      list = list.filter((a) => watchList.has(a.id))
+      list = list.filter((a) => isWatching(selectedMember, a.id))
     }
 
     if (selectedDay !== null) {
@@ -50,7 +54,7 @@ export function SchedulePage() {
     }
 
     return sortAnime(list, sortKey)
-  }, [animeList, selectedDay, sortKey, watchingOnly, watchList])
+  }, [animeList, selectedDay, sortKey, watchingOnly, selectedMember, isWatching])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,6 +71,12 @@ export function SchedulePage() {
       <main className="max-w-6xl mx-auto px-4 py-6">
         {!loading && !error && (
           <div className="mb-6 space-y-3">
+            {/* メンバー選択 */}
+            <div>
+              <p className="text-center text-xs text-gray-400 mb-2">視聴メンバーを選択</p>
+              <MemberSelector selected={selectedMember} onChange={setSelectedMember} />
+            </div>
+
             {/* ソートタブ */}
             <div className="flex flex-wrap gap-2 justify-center">
               {SORT_LABELS.map(({ key, label }) => (
@@ -97,7 +107,7 @@ export function SchedulePage() {
                 }`}
                 onClick={() => setWatchingOnly((v) => !v)}
               >
-                ✓ 視聴中のみ表示 {watchList.size > 0 && `(${watchList.size})`}
+                ✓ {selectedMember}の視聴中のみ表示 {currentWatchCount > 0 && `(${currentWatchCount})`}
               </button>
             </div>
 
@@ -122,8 +132,9 @@ export function SchedulePage() {
               <AnimeCard
                 key={anime.id}
                 anime={anime}
-                watching={isWatching(anime.id)}
-                onToggleWatch={() => toggle(anime.id)}
+                currentMemberWatching={isWatching(selectedMember, anime.id)}
+                watchingMembers={watchingMembers(anime.id)}
+                onToggleWatch={() => toggle(selectedMember, anime.id)}
               />
             ))}
           </div>
