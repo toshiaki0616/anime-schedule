@@ -27,7 +27,8 @@ export function useWatchList() {
       .from('watch_list')
       .select('member, anime_id')
       .then(({ data, error }) => {
-        if (error || !data) return
+        if (error) { console.error('[WatchList] 読み込みエラー:', error); return }
+        if (!data) return
         const lists = emptyLists()
         data.forEach(({ member, anime_id }: { member: string; anime_id: number }) => {
           if (MEMBERS.includes(member as Member)) {
@@ -44,9 +45,11 @@ export function useWatchList() {
       if (next.has(id)) {
         next.delete(id)
         supabase.from('watch_list').delete().match({ member, anime_id: id })
+          .then(({ error }) => { if (error) console.error('[WatchList] 削除エラー:', error) })
       } else {
         next.add(id)
         supabase.from('watch_list').insert({ member, anime_id: id })
+          .then(({ error }) => { if (error) console.error('[WatchList] 保存エラー:', error) })
       }
       return { ...prev, [member]: next }
     })
