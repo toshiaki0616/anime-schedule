@@ -28,9 +28,12 @@ interface Props {
   currentMemberWatching: boolean
   watchingMembers: Member[]
   onToggleWatch: () => void
+  currentMemberInterested: boolean
+  interestedMembers: Member[]
+  onToggleInterested: () => void
 }
 
-export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch }: Props) {
+export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch, currentMemberInterested, interestedMembers, onToggleInterested }: Props) {
   const studioName = anime.studios.edges[0]?.node.name ?? null
   const startDate = formatStartDate(
     anime.startDate.year,
@@ -42,15 +45,28 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
     : null
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${currentMemberWatching ? 'border-indigo-400' : 'border-gray-100'}`}>
-      <div className="aspect-[2/3] bg-gray-100 overflow-hidden relative">
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${currentMemberWatching ? 'border-indigo-400' : 'border-gray-100 dark:border-gray-700'}`}>
+      <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
         <img
           src={anime.coverImage.extraLarge ?? anime.coverImage.large}
           alt={anime.title.native ?? anime.title.romaji}
           className="w-full h-full object-cover"
           loading="lazy"
         />
-        {/* 視聴チェックボタン */}
+        {/* ★ 気になるボタン（左上） */}
+        <button
+          onClick={onToggleInterested}
+          className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
+            currentMemberInterested
+              ? 'bg-yellow-400 text-white'
+              : 'bg-white/80 text-gray-400 hover:bg-white'
+          }`}
+          title={currentMemberInterested ? '気になる済み' : '気になる'}
+        >
+          ★
+        </button>
+
+        {/* 視聴チェックボタン（右上） */}
         <button
           onClick={onToggleWatch}
           className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
@@ -63,14 +79,29 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
           {currentMemberWatching ? '✓' : '+'}
         </button>
 
-        {/* 視聴中メンバーのドット */}
-        {watchingMembers.length > 0 && (
+        {/* 気になるメンバーのドット（左下）*/}
+        {interestedMembers.length > 0 && (
           <div className="absolute bottom-2 left-2 flex gap-1">
+            {interestedMembers.map((m) => (
+              <span
+                key={m}
+                className={`w-4 h-4 rounded-full ${MEMBER_COLORS[m]} flex items-center justify-center text-white text-[8px] font-bold ring-1 ring-yellow-400`}
+                title={`${m}（気になる）`}
+              >
+                {m[0]}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* 視聴中メンバーのドット（右下）*/}
+        {watchingMembers.length > 0 && (
+          <div className="absolute bottom-2 right-2 flex gap-1">
             {watchingMembers.map((m) => (
               <span
                 key={m}
                 className={`w-4 h-4 rounded-full ${MEMBER_COLORS[m]} flex items-center justify-center text-white text-[8px] font-bold`}
-                title={m}
+                title={`${m}（視聴中）`}
               >
                 {m[0]}
               </span>
@@ -79,42 +110,42 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
         )}
       </div>
       <div className="p-3">
-        <h3 className="font-bold text-sm text-gray-900 line-clamp-2 mb-1">
+        <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
           {anime.title.native ?? anime.title.romaji}
         </h3>
         {anime.title.native && (
-          <p className="text-xs text-gray-400 line-clamp-1 mb-2">{anime.title.romaji}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 mb-2">{anime.title.romaji}</p>
         )}
 
-        <div className="space-y-1 text-xs text-gray-600">
+        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center gap-1">
-            <span className="text-gray-400">開始</span>
+            <span className="text-gray-400 dark:text-gray-500">開始</span>
             <span>{startDate}</span>
           </div>
 
           {airingInfo && (
             <div className="flex items-center gap-1">
-              <span className="text-gray-400">次回</span>
-              <span className="text-indigo-600 font-medium">{airingInfo}</span>
+              <span className="text-gray-400 dark:text-gray-500">次回</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium">{airingInfo}</span>
             </div>
           )}
 
           {studioName && (
             <div className="flex items-center gap-1">
-              <span className="text-gray-400">制作</span>
+              <span className="text-gray-400 dark:text-gray-500">制作</span>
               <span className="line-clamp-1">{studioName}</span>
             </div>
           )}
 
           {anime.episodes && (
             <div className="flex items-center gap-1">
-              <span className="text-gray-400">全</span>
+              <span className="text-gray-400 dark:text-gray-500">全</span>
               <span>{anime.episodes}話</span>
             </div>
           )}
 
           <div className="flex items-center gap-1">
-            <span className="text-gray-400">視聴者</span>
+            <span className="text-gray-400 dark:text-gray-500">視聴者</span>
             <span>{formatPopularity(anime.popularity)}</span>
           </div>
         </div>
@@ -122,7 +153,7 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
         {anime.averageScore && (
           <div className="mt-2 flex items-center gap-1">
             <span className="text-yellow-500 text-sm">★</span>
-            <span className="text-sm font-medium text-gray-700">{anime.averageScore}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{anime.averageScore}</span>
           </div>
         )}
       </div>
