@@ -13,6 +13,7 @@ const ANIME_SCHEDULE_QUERY = `
         isAdult: false
       ) {
         id
+        idMal
         title { romaji native }
         coverImage { extraLarge large }
         startDate { year month day }

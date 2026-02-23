@@ -20,6 +20,7 @@ export interface Studio {
 
 export interface Anime {
   id: number
+  idMal: number | null
   title: AnimeTitle
   coverImage: { extraLarge: string | null; large: string }
   startDate: FuzzyDate

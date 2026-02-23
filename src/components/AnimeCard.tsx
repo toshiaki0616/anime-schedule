@@ -1,5 +1,21 @@
+import { useState } from 'react'
 import type { Anime } from '../types/anime'
 import { MEMBER_COLORS, type Member } from '../hooks/useWatchList'
+
+interface Themes {
+  openings: string[]
+  endings: string[]
+}
+
+async function fetchThemes(malId: number): Promise<Themes> {
+  const key = `themes_${malId}`
+  const cached = sessionStorage.getItem(key)
+  if (cached) return JSON.parse(cached) as Themes
+  const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}/themes`)
+  const json = await res.json() as { data: Themes }
+  sessionStorage.setItem(key, JSON.stringify(json.data))
+  return json.data
+}
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
 
@@ -34,6 +50,27 @@ interface Props {
 }
 
 export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch, currentMemberInterested, interestedMembers, onToggleInterested }: Props) {
+  const [expanded, setExpanded] = useState(false)
+  const [themes, setThemes] = useState<Themes | null>(null)
+  const [themesLoading, setThemesLoading] = useState(false)
+
+  const handleToggleThemes = async () => {
+    if (!anime.idMal) return
+    const next = !expanded
+    setExpanded(next)
+    if (next && themes === null) {
+      setThemesLoading(true)
+      try {
+        const data = await fetchThemes(anime.idMal)
+        setThemes(data)
+      } catch {
+        setThemes({ openings: [], endings: [] })
+      } finally {
+        setThemesLoading(false)
+      }
+    }
+  }
+
   const studioName = anime.studios.edges[0]?.node.name ?? null
   const startDate = formatStartDate(
     anime.startDate.year,
@@ -157,6 +194,50 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
           </div>
         )}
       </div>
+
+      {/* OP/ED 展開トグル */}
+      {anime.idMal && (
+        <button
+          onClick={handleToggleThemes}
+          className="w-full px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between transition-colors"
+        >
+          <span>OP / ED</span>
+          <span>{expanded ? '▲' : '▼'}</span>
+        </button>
+      )}
+
+      {expanded && (
+        <div className="px-3 pb-3 space-y-1 border-t border-gray-100 dark:border-gray-700">
+          {themesLoading ? (
+            <p className="text-xs text-gray-400 dark:text-gray-500 py-1">取得中...</p>
+          ) : (
+            <>
+              {themes && themes.openings.length > 0 ? (
+                <div>
+                  {themes.openings.map((op, i) => (
+                    <p key={i} className="text-xs text-gray-600 dark:text-gray-400 leading-5">
+                      <span className="font-medium text-indigo-500">OP</span> {op}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 dark:text-gray-500 py-1">OP情報なし</p>
+              )}
+              {themes && themes.endings.length > 0 ? (
+                <div>
+                  {themes.endings.map((ed, i) => (
+                    <p key={i} className="text-xs text-gray-600 dark:text-gray-400 leading-5">
+                      <span className="font-medium text-pink-500">ED</span> {ed}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 dark:text-gray-500 py-1">ED情報なし</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
