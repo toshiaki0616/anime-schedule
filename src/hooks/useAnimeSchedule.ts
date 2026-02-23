@@ -8,12 +8,23 @@ function calcDayOfWeek(anime: Anime): number | undefined {
   return date.getDay() // 0=日, 1=月, ..., 6=土
 }
 
+const cacheKey = (season: string, year: number) => `anime_${season}_${year}`
+
 export function useAnimeSchedule(season: string, seasonYear: number) {
   const [animeList, setAnimeList] = useState<Anime[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const key = cacheKey(season, seasonYear)
+    const cached = sessionStorage.getItem(key)
+    if (cached) {
+      setAnimeList(JSON.parse(cached) as Anime[])
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -23,6 +34,7 @@ export function useAnimeSchedule(season: string, seasonYear: number) {
           ...anime,
           airingDayOfWeek: calcDayOfWeek(anime),
         }))
+        sessionStorage.setItem(key, JSON.stringify(list))
         setAnimeList(list)
       })
       .catch((err: unknown) => {
