@@ -30,6 +30,8 @@ export interface Anime {
   popularity: number
   genres: string[]
   studios: { edges: { node: Studio }[] }
+  siteUrl: string
+  externalLinks: { url: string; type: string }[]
   airingDayOfWeek?: number // 0=日 〜 6=土（nextAiringEpisode から計算）
 }
 

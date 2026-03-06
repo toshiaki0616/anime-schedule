@@ -25,6 +25,8 @@ const ANIME_SCHEDULE_QUERY = `
         studios(isMain: true) {
           edges { node { name } }
         }
+        siteUrl
+        externalLinks { url type }
       }
     }
   }

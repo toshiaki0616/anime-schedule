@@ -8,7 +8,7 @@ function calcDayOfWeek(anime: Anime): number | undefined {
   return date.getDay() // 0=日, 1=月, ..., 6=土
 }
 
-const cacheKey = (season: string, year: number) => `anime_${season}_${year}`
+const cacheKey = (season: string, year: number) => `anime_v2_${season}_${year}`
 
 export function useAnimeSchedule(season: string, seasonYear: number) {
   const [animeList, setAnimeList] = useState<Anime[]>([])
