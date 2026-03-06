@@ -47,9 +47,10 @@ interface Props {
   currentMemberInterested: boolean
   interestedMembers: Member[]
   onToggleInterested: () => void
+  onCardClick: () => void
 }
 
-export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch, currentMemberInterested, interestedMembers, onToggleInterested }: Props) {
+export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onToggleWatch, currentMemberInterested, interestedMembers, onToggleInterested, onCardClick }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [themes, setThemes] = useState<Themes | null>(null)
   const [themesLoading, setThemesLoading] = useState(false)
@@ -71,6 +72,8 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
     }
   }
 
+  const officialUrl = anime.externalLinks.find((l) => l.type === 'OFFICIAL')?.url ?? anime.siteUrl
+
   const studioName = anime.studios.edges[0]?.node.name ?? null
   const startDate = formatStartDate(
     anime.startDate.year,
@@ -82,7 +85,10 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
     : null
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${currentMemberWatching ? 'border-indigo-400' : 'border-gray-100 dark:border-gray-700'}`}>
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${currentMemberWatching ? 'border-indigo-400' : 'border-gray-100 dark:border-gray-700'}`}
+      onClick={onCardClick}
+    >
       <div className="aspect-[2/3] bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
         <img
           src={anime.coverImage.extraLarge ?? anime.coverImage.large}
@@ -92,7 +98,7 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
         />
         {/* ★ 気になるボタン（左上） */}
         <button
-          onClick={onToggleInterested}
+          onClick={(e) => { e.stopPropagation(); onToggleInterested() }}
           className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
             currentMemberInterested
               ? 'bg-yellow-400 text-white'
@@ -105,7 +111,7 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
 
         {/* 視聴チェックボタン（右上） */}
         <button
-          onClick={onToggleWatch}
+          onClick={(e) => { e.stopPropagation(); onToggleWatch() }}
           className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition-colors ${
             currentMemberWatching
               ? 'bg-indigo-600 text-white'
@@ -147,8 +153,16 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
         )}
       </div>
       <div className="p-3">
-        <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
-          {anime.title.native ?? anime.title.romaji}
+        <h3 className="font-bold text-sm line-clamp-2 mb-1">
+          <a
+            href={officialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {anime.title.native ?? anime.title.romaji}
+          </a>
         </h3>
         {anime.title.native && (
           <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 mb-2">{anime.title.romaji}</p>
@@ -198,7 +212,7 @@ export function AnimeCard({ anime, currentMemberWatching, watchingMembers, onTog
       {/* OP/ED 展開トグル */}
       {anime.idMal && (
         <button
-          onClick={handleToggleThemes}
+          onClick={(e) => { e.stopPropagation(); void handleToggleThemes() }}
           className="w-full px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between transition-colors"
         >
           <span>OP / ED</span>

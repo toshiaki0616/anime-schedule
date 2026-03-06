@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react'
 import { useAnimeSchedule } from '../hooks/useAnimeSchedule'
 import { useWatchList, MEMBERS, type Member } from '../hooks/useWatchList'
 import { useInterestedList } from '../hooks/useInterestedList'
+import { useWatchProgress } from '../hooks/useWatchProgress'
 import { AnimeCard } from '../components/AnimeCard'
+import { AnimeDetailModal } from '../components/AnimeDetailModal'
 import { DayFilter } from '../components/DayFilter'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { MemberSelector } from '../components/MemberSelector'
@@ -43,26 +45,43 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
   const { animeList, loading, error } = useAnimeSchedule(season, year)
   const { watchLists, toggle, isWatching, watchingMembers } = useWatchList()
   const { interestedLists, toggle: toggleInterested, isInterested, interestedMembers } = useInterestedList()
-  const [selectedMember, setSelectedMember] = useState<Member>(MEMBERS[0])
+  const { setProgress, getProgress } = useWatchProgress()
+  const [selectedMembers, setSelectedMembers] = useState<Member[]>([MEMBERS[0]])
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('popularity')
   const [watchingOnly, setWatchingOnly] = useState(false)
   const [interestedOnly, setInterestedOnly] = useState(false)
+  const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null)
 
   const seasonInfo = SEASON_INFO[season]
 
-  const currentWatchCount = watchLists[selectedMember].size
-  const currentInterestedCount = interestedLists[selectedMember].size
+  const currentWatchCount = useMemo(() => {
+    const [first, ...rest] = selectedMembers
+    let count = 0
+    watchLists[first].forEach((id) => {
+      if (rest.every((m) => watchLists[m].has(id))) count++
+    })
+    return count
+  }, [selectedMembers, watchLists])
+
+  const currentInterestedCount = useMemo(() => {
+    const [first, ...rest] = selectedMembers
+    let count = 0
+    interestedLists[first].forEach((id) => {
+      if (rest.every((m) => interestedLists[m].has(id))) count++
+    })
+    return count
+  }, [selectedMembers, interestedLists])
 
   const filtered = useMemo(() => {
     let list = animeList
 
     if (watchingOnly) {
-      list = list.filter((a) => isWatching(selectedMember, a.id))
+      list = list.filter((a) => selectedMembers.every((m) => isWatching(m, a.id)))
     }
 
     if (interestedOnly) {
-      list = list.filter((a) => isInterested(selectedMember, a.id))
+      list = list.filter((a) => selectedMembers.every((m) => isInterested(m, a.id)))
     }
 
     if (selectedDay !== null) {
@@ -72,7 +91,7 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
     }
 
     return sortAnime(list, sortKey)
-  }, [animeList, selectedDay, sortKey, watchingOnly, interestedOnly, selectedMember, isWatching, isInterested])
+  }, [animeList, selectedDay, sortKey, watchingOnly, interestedOnly, selectedMembers, isWatching, isInterested])
 
   const tabBtn = (active: boolean) =>
     `px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -83,6 +102,14 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {selectedAnime && (
+        <AnimeDetailModal
+          anime={selectedAnime}
+          onClose={() => setSelectedAnime(null)}
+          setProgress={setProgress}
+          getProgress={getProgress}
+        />
+      )}
       {/* ヘッダー */}
       <header className="bg-indigo-700 text-white py-6 px-4 shadow">
         <div className="max-w-6xl mx-auto flex items-start justify-between">
@@ -115,7 +142,7 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
             {/* メンバー選択 */}
             <div>
               <p className="text-center text-xs text-gray-400 dark:text-gray-500 mb-2">視聴メンバーを選択</p>
-              <MemberSelector selected={selectedMember} onChange={setSelectedMember} />
+              <MemberSelector selected={selectedMembers} onChange={setSelectedMembers} />
             </div>
 
             {/* ソートタブ */}
@@ -140,13 +167,13 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
                 className={tabBtn(watchingOnly)}
                 onClick={() => setWatchingOnly((v) => !v)}
               >
-                ✓ {selectedMember}の視聴中のみ {currentWatchCount > 0 && `(${currentWatchCount})`}
+                ✓ {selectedMembers.length === 1 ? `${selectedMembers[0]}の視聴中` : '共通の視聴中'}のみ {currentWatchCount > 0 && `(${currentWatchCount})`}
               </button>
               <button
                 className={tabBtn(interestedOnly)}
                 onClick={() => setInterestedOnly((v) => !v)}
               >
-                ★ {selectedMember}の気になるのみ {currentInterestedCount > 0 && `(${currentInterestedCount})`}
+                ★ {selectedMembers.length === 1 ? `${selectedMembers[0]}の気になる` : '共通の気になる'}のみ {currentInterestedCount > 0 && `(${currentInterestedCount})`}
               </button>
             </div>
 
@@ -171,12 +198,13 @@ export function SchedulePage({ darkMode, toggleDarkMode }: Props) {
               <AnimeCard
                 key={anime.id}
                 anime={anime}
-                currentMemberWatching={isWatching(selectedMember, anime.id)}
+                currentMemberWatching={selectedMembers.some((m) => isWatching(m, anime.id))}
                 watchingMembers={watchingMembers(anime.id)}
-                onToggleWatch={() => toggle(selectedMember, anime.id)}
-                currentMemberInterested={isInterested(selectedMember, anime.id)}
+                onToggleWatch={() => selectedMembers.forEach((m) => toggle(m, anime.id))}
+                currentMemberInterested={selectedMembers.some((m) => isInterested(m, anime.id))}
                 interestedMembers={interestedMembers(anime.id)}
-                onToggleInterested={() => toggleInterested(selectedMember, anime.id)}
+                onToggleInterested={() => selectedMembers.forEach((m) => toggleInterested(m, anime.id))}
+                onCardClick={() => setSelectedAnime(anime)}
               />
             ))}
           </div>
